@@ -1,3 +1,22 @@
 body {
     background-color: skyblue;
+    text-align: center;
+}
+
+#Logo {
+    padding-top: 50px;
+}
+
+.float {
+    position : "relative";
+    animation: float 1.5s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
 }
