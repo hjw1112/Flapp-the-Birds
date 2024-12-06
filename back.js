@@ -2,7 +2,7 @@ function createFloatingImage() {
     const container = document.getElementById('container');
 
     const img = document.createElement('img');
-    img.src = '/resources/effects/Bubbles.png';
+    img.src = 'resources/effect/Bubbles.png';
     img.className = 'floating-image';
 
     const randomX = Math.random() * window.innerWidth;
@@ -25,83 +25,171 @@ const windowWidth = window.innerWidth;
 setInterval(createFloatingImage, (windowWidth/2.5));
 
 //--------------------------------------------------------------
-const canvas = document.getElementById("game_canvas");
-const ctx = canvas.getContext("2d");
+
+document.getElementById('startbutton').addEventListener('click', () => {
+    document.getElementById('game_container').style.display = 'block';
+});
+
+
+const canvas = document.getElementById('game_canvas');
+const ctx = canvas.getContext('2d');
+
+// Set actual canvas dimensions (different from CSS dimensions)
+canvas.width = 320;
+canvas.height = 480;
 
 const bird = new Image();
+const pipe = new Image();
 const bg = new Image();
 const fg = new Image();
-const pipe_up = new Image();
-const pipe_down = new Image();
+bird.src = 'resources/assets/bird.png';
+pipe.src = 'resources/assets/pipe.png';
+bg.src = 'resources/assets/bg.png';
+fg.src = 'resources/assets/fg.png';
 
-bird.src = '/resources/effects/Bird.png';
-bg.src = '/resources/effects/Background.png';
-fg.src = '/resources/effects/Foreground.png';
-pipe_up.src = '/resources/effects/PipeNorth.png';
-pipe_down.src = '/resources/effects/PipeSouth.png';
-
-let constant
+// Update constants for better gameplay
+let gap = 100;
+let constant;
+let bX = 50;  // Move bird position more to the right
+let bY = 150;
+let gravity = 2.4;  // Reduced gravity for better control
 let score = 0;
-let gravity = 1.5;
-let bx = 10; //bird x position
-let by = 150; //bird y position
-let gap = 150; //gap between pipes(top, bottom)
+let gameSpeed = 2;  // Control pipe movement speed
+
 let pipes = [];
 pipes[0] = {
-    x: canvas.width,
-    y: 0	
+  x: canvas.width,
+  y: 0
 };
 
+document.addEventListener('keydown', (event) => {
+    if(event.keyCode === 32) {  // Space key
+        if(gameOver) {
+            // Reset game
+            gameOver = false;
+            score = 0;
+            bY = 150;
+            gameSpeed = 2;
+            pipes = [{
+                x: canvas.width,
+                y: 0
+            }];
+            draw();
+        } else {
+            moveUp();
+        }
+    }
+});
 
-document.addEventListener("keydown", moveUp);
 function moveUp() {
-    by -= 25;
+  bY -= 40;
 }
 
+function collision(bX, bY, pipes){
+    if (
+        (bX + bird.width >= pipes.x &&
+          bX <= pipes.x + pipe.width &&
+          (bY <= pipes.y + pipe.height ||
+            bY + bird.height >= pipes.y + constant)) ||
+        bY + bird.height >= canvas.height - fg.height
+      ) {
+        return true;
+      }
+}
 
-function draw() {
-    ctx.drawImage(bg, 0, 0);
+function drawRotatedImage(img, x, y, angle) {
+    ctx.save();
+    ctx.translate(x + img.width / 2, y + img.height / 2);
+    ctx.rotate((angle * Math.PI) / 180);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ctx.restore();
+  }
 
-    //init pipe
-    for (let i = 0; i < pipes.length; i++) {
-        constant = pipe_up.height + gap
-        ctx.drawImage(pipe_up, pipes[i].x, pipes[i].y);
-        ctx.drawImage(pipe_down, pipes[i].x, pipes[i].y + constant);
+function endGame(){
+    gameOver = true;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = "#fff";
+    ctx.font = "40px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Game Over", canvas.width/2, canvas.height/2);
+    ctx.font = "20px Arial";
+    ctx.fillText(`Score: ${score}`, canvas.width/2, canvas.height/2 + 40);
+    ctx.fillText("Press Space to restart", canvas.width/2, canvas.height/2 + 80);
+}
+
+function draw(){
+    // Clear canvas before drawing new frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw background
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+    
+    for(let i = 0; i < pipes.length; i++) {
+        constant = pipe.height + gap;
+        
+        // Draw top pipe
+        ctx.drawImage(pipe, 
+            pipes[i].x, pipes[i].y,
+            pipe.width, pipe.height);
+            
+        // Draw bottom pipe
+        drawRotatedImage(pipe, 
+            pipes[i].x, 
+            pipes[i].y + constant, 
+            180);
+            
+        // Move pipes
+        pipes[i].x -= gameSpeed;
+
+        // Generate new pipes
+        if (pipes[i].x === 125) {
+            pipes.push({
+                x: canvas.width,
+                y: Math.floor(Math.random() * (pipe.height - gap)) - pipe.height
+            });
+        }
+
+        // Check collision
+        if (collision(bX, bY, pipes[i])) {
+            endGame();
+            return;  // Stop animation on game over
+        }
+
+        // Score counting
+        if (pipes[i].x === 5) {
+            score++;
+            // Increase game speed with score
+            gameSpeed = Math.min(2 + (score * 0.1), 4);
+        }
     }
 
-    //pipe to left
-    pipes[i].x--;
-
-    //add pipe
-    if (pipes[i].x === 125) {
-        pipes.push({
-            x: canvas.width,
-            y: Math.floor(math.random()*pipe_up.height) - pipe_up.height
-        })
-    }
-
-    //collision check
-    checkGameOver();
-
-    //score record
-    if (pipes[i].x === 5) {
-        score++;
-    }
-
-
+    // Draw foreground
     ctx.drawImage(fg, 0, canvas.height - fg.height);
-    ctx.drawImage(bird, bx, by);
+    
+    // Draw bird with slight rotation based on velocity
+    const rotation = Math.min(Math.max(bY - previousBY, -20), 20);
+    drawRotatedImage(bird, bX, bY, rotation);
+    
+    // Store previous Y position for rotation calculation
+    previousBY = bY;
+    
+    // Apply gravity
+    bY += gravity;
 
-    //bird move downwards
-    by += gravity;
-
-    ctx.fillText("Score : " + score, 10, canvas.height - 20);
-    requestAnimationFrame(draw);
+    // Draw score
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score : " + score, 10, 30);
+    
+    if (!gameOver) {
+        requestAnimationFrame(draw);
+    }
 }
 
-//check collision
-// function checkGameOver() {
-//     if()
-// }
+// Add game state variables
+let gameOver = false;
+let previousBY = bY;
 
 draw();
