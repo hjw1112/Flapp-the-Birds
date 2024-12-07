@@ -68,6 +68,8 @@ const bounceDuration = 1000; // 1 second in milliseconds
 let isBouncing = false;
 let bounceStartTime = 0;
 
+let fgX = 0;
+
 document.addEventListener('keydown', (event) => {
     if(event.keyCode === 32) {
         if(gameOver) {
@@ -78,6 +80,7 @@ document.addEventListener('keydown', (event) => {
             gameSpeed = 2;
             birdVelocity = 0;  // Reset bird velocity
             isBouncing = false; // Reset bounce state
+            fgX = 0;  // Reset foreground position
             pipes = [{
                 x: canvas.width,
                 y: -150
@@ -177,8 +180,15 @@ function draw(){
         }
     }
 
-    // draw foreground
-    ctx.drawImage(fg, 0, canvas.height - fg.height);
+    // Update and draw foreground with scrolling
+    fgX -= gameSpeed;
+    if (fgX <= -fg.width) {
+        fgX = 0;
+    }
+    
+    // Draw two copies of the foreground to create seamless scrolling
+    ctx.drawImage(fg, fgX, canvas.height - fg.height);
+    ctx.drawImage(fg, fgX + fg.width, canvas.height - fg.height);
     
     let rotation;
     if (bY < previousBY) {
