@@ -2,7 +2,7 @@ function createFloatingImage() {
     const container = document.getElementById('container');
 
     const img = document.createElement('img');
-    img.src = 'resources/effect/Bubbles.png';
+    img.src = 'resources/effects/Bubbles.png';
     img.className = 'floating-image';
 
     const randomX = Math.random() * window.innerWidth;
@@ -34,7 +34,6 @@ document.getElementById('startbutton').addEventListener('click', () => {
 const canvas = document.getElementById('game_canvas');
 const ctx = canvas.getContext('2d');
 
-// Set actual canvas dimensions (different from CSS dimensions)
 canvas.width = 320;
 canvas.height = 480;
 
@@ -47,32 +46,31 @@ pipe.src = 'resources/assets/pipe.png';
 bg.src = 'resources/assets/bg.png';
 fg.src = 'resources/assets/fg.png';
 
-// Update constants for better gameplay
 let gap = 100;
 let constant;
-let bX = 50;  // Move bird position more to the right
+let bX = 50;
 let bY = 150;
-let gravity = 2.4;  // Reduced gravity for better control
+let gravity = 2.4;
 let score = 0;
-let gameSpeed = 2;  // Control pipe movement speed
+let gameSpeed = 2;
 
 let pipes = [];
 pipes[0] = {
   x: canvas.width,
-  y: 0
+  y: Math.random() * (pipe.height - gap) - pipe.height
 };
 
 document.addEventListener('keydown', (event) => {
-    if(event.keyCode === 32) {  // Space key
+    if(event.keyCode === 32) {
         if(gameOver) {
-            // Reset game
+            //reset
             gameOver = false;
             score = 0;
             bY = 150;
             gameSpeed = 2;
             pipes = [{
                 x: canvas.width,
-                y: 0
+                y: -150
             }];
             draw();
         } else {
@@ -82,7 +80,8 @@ document.addEventListener('keydown', (event) => {
 });
 
 function moveUp() {
-  bY -= 40;
+  bY -= 45;
+  previousBY = bY + 15;
 }
 
 function collision(bX, bY, pipes){
@@ -119,58 +118,72 @@ function endGame(){
     ctx.fillText("Press Space to restart", canvas.width/2, canvas.height/2 + 80);
 }
 
+let currentRotation = 0;
+let targetRotation = 0;
+const rotationSpeed = 0.5;
+
 function draw(){
-    // Clear canvas before drawing new frame
+    //clear canvas before drawing new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw background
+    //draw background
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     
     for(let i = 0; i < pipes.length; i++) {
         constant = pipe.height + gap;
         
-        // Draw top pipe
+        //draw top pipe
         ctx.drawImage(pipe, 
-            pipes[i].x, pipes[i].y,
+            pipes[i].x, pipes[i].y + constant,
             pipe.width, pipe.height);
             
-        // Draw bottom pipe
+        //draw bottom pipe
         drawRotatedImage(pipe, 
             pipes[i].x, 
-            pipes[i].y + constant, 
+            pipes[i].y, 
             180);
             
-        // Move pipes
+        //move pipes
         pipes[i].x -= gameSpeed;
-
-        // Generate new pipes
-        if (pipes[i].x === 125) {
+  
+        //generate new pipes
+        if (pipes[i].x === 30) {
             pipes.push({
                 x: canvas.width,
                 y: Math.floor(Math.random() * (pipe.height - gap)) - pipe.height
             });
         }
 
-        // Check collision
+        //check collision
         if (collision(bX, bY, pipes[i])) {
             endGame();
-            return;  // Stop animation on game over
+            return;
         }
 
-        // Score counting
-        if (pipes[i].x === 5) {
+        //score counting
+        if (pipes[i].x === 40) {
             score++;
-            // Increase game speed with score
-            gameSpeed = Math.min(2 + (score * 0.1), 4);
         }
     }
 
     // Draw foreground
     ctx.drawImage(fg, 0, canvas.height - fg.height);
     
-    // Draw bird with slight rotation based on velocity
-    const rotation = Math.min(Math.max(bY - previousBY, -20), 20);
-    drawRotatedImage(bird, bX, bY, rotation);
+    // Update rotation calculation for more pronounced tilt
+    let rotation;
+    if (bY < previousBY) {
+        // Bird is moving up - tilt upward (-30 degrees)
+        targetRotation = -30;
+    } else {
+        // Bird is moving down - tilt downward (90 degrees max)
+        targetRotation = Math.min((bY - previousBY) * 2, 90);
+    }
+    
+    // Smoothly interpolate between current and target rotation
+    currentRotation = currentRotation + (targetRotation - currentRotation) * rotationSpeed;
+    
+    // Draw bird with smoothed rotation
+    drawRotatedImage(bird, bX, bY, currentRotation);
     
     // Store previous Y position for rotation calculation
     previousBY = bY;
@@ -181,14 +194,14 @@ function draw(){
     // Draw score
     ctx.fillStyle = "#000";
     ctx.font = "20px Arial";
-    ctx.fillText("Score : " + score, 10, 30);
+    ctx.fillText("Score : " + score, 50, 30);
     
     if (!gameOver) {
         requestAnimationFrame(draw);
     }
 }
 
-// Add game state variables
+//game state variable
 let gameOver = false;
 let previousBY = bY;
 
