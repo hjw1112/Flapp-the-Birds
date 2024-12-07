@@ -28,7 +28,9 @@ setInterval(createFloatingImage, (windowWidth/2.5));
 
 document.getElementById('startbutton').addEventListener('click', () => {
     document.getElementById('game_container').style.display = 'block';
+    document.getElementById('options').style.display = 'none';
 });
+
 
 
 const canvas = document.getElementById('game_canvas');
@@ -60,6 +62,12 @@ pipes[0] = {
   y: Math.random() * (pipe.height - gap) - pipe.height
 };
 
+let birdVelocity = 0;
+const bounceVelocity = -8.7; // Initial upward velocity
+const bounceDuration = 1000; // 1 second in milliseconds
+let isBouncing = false;
+let bounceStartTime = 0;
+
 document.addEventListener('keydown', (event) => {
     if(event.keyCode === 32) {
         if(gameOver) {
@@ -68,6 +76,8 @@ document.addEventListener('keydown', (event) => {
             score = 0;
             bY = 150;
             gameSpeed = 2;
+            birdVelocity = 0;  // Reset bird velocity
+            isBouncing = false; // Reset bounce state
             pipes = [{
                 x: canvas.width,
                 y: -150
@@ -80,8 +90,9 @@ document.addEventListener('keydown', (event) => {
 });
 
 function moveUp() {
-  bY -= 45;
-  previousBY = bY + 15;
+    birdVelocity = bounceVelocity;
+    isBouncing = true;
+    bounceStartTime = Date.now();
 }
 
 function collision(bX, bY, pipes){
@@ -166,32 +177,45 @@ function draw(){
         }
     }
 
-    // Draw foreground
+    // draw foreground
     ctx.drawImage(fg, 0, canvas.height - fg.height);
     
-    // Update rotation calculation for more pronounced tilt
     let rotation;
     if (bY < previousBY) {
-        // Bird is moving up - tilt upward (-30 degrees)
+        //tilt upward (-30 degrees)
         targetRotation = -30;
     } else {
-        // Bird is moving down - tilt downward (90 degrees max)
+        //tilt downward (90 degrees max)
         targetRotation = Math.min((bY - previousBY) * 2, 90);
     }
     
-    // Smoothly interpolate between current and target rotation
+    //Smoothly interpolate between current and target rotation
     currentRotation = currentRotation + (targetRotation - currentRotation) * rotationSpeed;
     
+    // Update bird physics before drawing
+    if (isBouncing) {
+        const currentTime = Date.now();
+        if (currentTime - bounceStartTime >= bounceDuration) {
+            isBouncing = false;
+        }
+        
+        // Gradually reduce the upward velocity
+        birdVelocity += gravity * 0.16; // Adjust this multiplier to control bounce feel
+    }
+    
+    // Update bird position using velocity
+    bY += birdVelocity;
+
     // Draw bird with smoothed rotation
     drawRotatedImage(bird, bX, bY, currentRotation);
     
-    // Store previous Y position for rotation calculation
+    //store previous Y position for rotation calculation
     previousBY = bY;
-    
-    // Apply gravity
+
+    //apply gravity
     bY += gravity;
 
-    // Draw score
+    //draw score
     ctx.fillStyle = "#000";
     ctx.font = "20px Arial";
     ctx.fillText("Score : " + score, 50, 30);

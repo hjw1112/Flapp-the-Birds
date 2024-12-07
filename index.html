@@ -7,13 +7,21 @@
     <title>Snorkel Bird</title>
 </head>
 <body>
-    <div id="container">
-<img src="resources/effects/Logo.png" alt="Snorkel Birds Logo" class="float" id="Logo">        
-        <p id="description">Flappy bird remake with additional features. Use space bar to play. (more features coming soon via update)</p>
-        <button class="button" id="startbutton">Start Playing</button>
-        <div id="game_container">
-            <canvas id="game_canvas"></canvas> 
-        </div>
+    <img src="resources/effects/Logo.png" alt="Snorkel Birds Logo" class="float" id="Logo">        
+            <p id="description">Flappy bird remake with additional features. Use space bar to play. (more features coming soon via update)</p>
+    <div id="options">
+            <label class="checkbox">
+                <input type="checkbox" name="options" value="glider"> <span>Enable Glider</span>
+            </label>
+            <br>
+            <label class="checkbox">
+                <input type="checkbox" name="options" value="powerup"> <span>Enable Powerup</span>
+            </label>
+            <br>
+            <button class="button" id="startbutton">Start Playing</button>
+    </div>
+    <div id="game_container">
+        <canvas id="game_canvas"></canvas> 
     </div>
     <script src="back.js"></script>
 </body>
