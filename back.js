@@ -63,12 +63,16 @@ pipes[0] = {
 };
 
 let birdVelocity = 0;
-const bounceVelocity = -8.7; // Initial upward velocity
-const bounceDuration = 1000; // 1 second in milliseconds
+const bounceVelocity = -8.5;
+const bounceDuration = 1000;
 let isBouncing = false;
 let bounceStartTime = 0;
 
 let fgX = 0;
+
+let isGliding = false;
+const normalGravity = 2.4;
+const glideGravity = 0.3;
 
 document.addEventListener('keydown', (event) => {
     if(event.keyCode === 32) {
@@ -78,19 +82,37 @@ document.addEventListener('keydown', (event) => {
             score = 0;
             bY = 150;
             gameSpeed = 2;
-            birdVelocity = 0;  // Reset bird velocity
-            isBouncing = false; // Reset bounce state
-            fgX = 0;  // Reset foreground position
+            birdVelocity = 0;
+            isBouncing = false;
+            fgX = 0;
             pipes = [{
                 x: canvas.width,
                 y: -150
             }];
             draw();
-        } else {
+        } else if (!isGliding) {
             moveUp();
         }
     }
+    if(event.keyCode === 71) {
+        isGliding = true;
+        gravity = glideGravity;
+        birdVelocity = 0;
+    }
 });
+
+document.addEventListener('keyup', (event) => {
+    if(event.keyCode === 71) {
+        isGliding = false;
+        gravity = normalGravity;
+    }
+});
+
+
+
+function powerup() {
+    console.log('powerup');
+}
 
 function moveUp() {
     birdVelocity = bounceVelocity;
@@ -137,6 +159,18 @@ let targetRotation = 0;
 const rotationSpeed = 0.5;
 
 function draw(){
+    let glider = false;
+    let powerup = false;
+
+    if (options && options.value === 'glider') {
+        glider = true;
+    }
+    if (options && options.value === 'powerup') {
+        powerup = true;
+    }
+
+    
+
     //clear canvas before drawing new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -180,13 +214,13 @@ function draw(){
         }
     }
 
-    // Update and draw foreground with scrolling
+    //update and draw foreground with scrolling
     fgX -= gameSpeed;
     if (fgX <= -fg.width) {
         fgX = 0;
     }
     
-    // Draw two copies of the foreground to create seamless scrolling
+    //draw two copies of the foreground to create seamless scrolling
     ctx.drawImage(fg, fgX, canvas.height - fg.height);
     ctx.drawImage(fg, fgX + fg.width, canvas.height - fg.height);
     
@@ -199,18 +233,18 @@ function draw(){
         targetRotation = Math.min((bY - previousBY) * 2, 90);
     }
     
-    //Smoothly interpolate between current and target rotation
+    //smoothly interpolate between current and target rotation
     currentRotation = currentRotation + (targetRotation - currentRotation) * rotationSpeed;
     
-    // Update bird physics before drawing
+    //update bird physics before drawing
     if (isBouncing) {
         const currentTime = Date.now();
         if (currentTime - bounceStartTime >= bounceDuration) {
             isBouncing = false;
         }
         
-        // Gradually reduce the upward velocity
-        birdVelocity += gravity * 0.16; // Adjust this multiplier to control bounce feel
+        //gradually reduce the upward velocity
+        birdVelocity += gravity * 0.16; //control bounce feel
     }
     
     // Update bird position using velocity
